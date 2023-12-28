@@ -30,7 +30,7 @@ class Grid:
         self.player1Score = 0
         self.player2Score = 0
 
-        self.font = pygame.font.SysFont('Arial', self.tile_size // 4, True, False)
+        self.font = pygame.font.SysFont('Arial', int(self.tile_size // 4), True, False)
 
     def newGame(self, random_sprite):
         self.tokens.clear()
@@ -76,16 +76,45 @@ class Grid:
 
     def regenGrid(self, rows, columns):
         """generate an empty grid for logic use"""
+        opening_library = [
+            [[(0, 5), (1, 4), (2, 3), (2, 2), (3, 2), (3, 3), (3, 4), (4, 2), (4, 3), (4, 4)],
+             [(2, 4), (3, 5), (4, 5), (5, 5)]],
+            [[(2, 2), (2, 3), (2, 4), (3, 1), (3, 2), (3, 3), (3, 4), (3, 5), (3, 6)],
+             [(4, 3), (4, 4), (5, 2), (5, 3), (5, 4)]],
+            [[(1, 2), (2, 2), (2, 3), (3, 1), (3, 2), (3, 3), (3, 4), (4, 3), (5, 3)],
+             [(1, 3), (2, 4), (3, 5), (4, 4), (4, 5)]],
+            [[(1, 3), (2, 2), (2, 3), (3, 2), (3, 3), (4, 2), (4, 3), (5, 4)],
+             [(2, 5), (3, 4), (3, 5), (4, 4), (4, 5), (5, 3)]],
+            [[(2, 1), (2, 2), (2, 3), (3, 4), (4, 2), (4, 3), (4, 4), (4, 5)],
+             [(1, 3), (2, 4), (3, 1), (3, 2), (3, 3), (3, 5)]],
+            [[(1, 4), (2, 3), (2, 4), (2, 5), (3, 4), (4, 2), (4, 3), (4, 4)],
+             [(1, 3), (2, 2), (3, 1), (3, 2), (3, 3), (3, 5)]],
+            [[(1, 3), (2, 2), (2, 3), (3, 2), (3, 3), (4, 2), (5, 3), (6, 4)],
+             [(2, 5), (3, 4), (3, 5), (4, 3), (4, 4), (4, 5)]],
+            [[(2, 1), (2, 2), (2, 3), (3, 4), (4, 2), (4, 3), (4, 4), (4, 5)],
+             [(1, 3), (2, 4), (3, 1), (3, 2), (3, 3), (3, 5)]],
+            [[(1, 3), (2, 2), (2, 3), (3, 2), (3, 3), (3, 5), (4, 2), (5, 1)],
+             [(3, 4), (4, 1), (4, 3), (4, 4), (4, 5), (5, 3)]],
+            [[(2, 2), (3, 2), (3, 3), (3, 5), (4, 2), (4, 3), (5, 3), (5, 4), (6, 3)],
+             [(2, 3), (3, 4), (4, 4), (4, 5), (5, 2)]]
+        ]
         grid = []
         for y in range(rows):
             line = []
             for x in range(columns):
                 line.append(0)
             grid.append(line)
-        self.insertToken(grid, -1, 3, 3)
-        self.insertToken(grid, 1, 3, 4)
-        self.insertToken(grid, -1, 4, 4)
-        self.insertToken(grid, 1, 4, 3)
+
+        for whiteToken in opening_library[5][0]:
+            self.insertToken(grid, 1, whiteToken[0], whiteToken[1])
+
+        for blackToken in opening_library[5][1]:
+            self.insertToken(grid, -1, blackToken[0], blackToken[1])
+
+        # self.insertToken(grid, -1, 3, 3)
+        # self.insertToken(grid, 1, 3, 4)
+        # self.insertToken(grid, -1, 4, 4)
+        # self.insertToken(grid, 1, 4, 3)
 
         return grid
 
@@ -119,7 +148,7 @@ class Grid:
         else:
             turn_text = f'Turn : {self.GAME.turn_count}'
         text_img = self.font.render(turn_text, 1, 'White')
-        window.blit(text_img, (self.tile_size * 11.2, self.tile_size * 4))
+        window.blit(text_img, (self.tile_size * 11.2, self.tile_size * 3.5))
 
     def drawRollbackButton(self, window):
         tile = self.tile_size
@@ -135,23 +164,55 @@ class Grid:
             textImg = self.font.render('Branch', 1, 'Black')
             window.blit(textImg, (self.tile_size * 11.25, self.tile_size * 8.34))
 
-    def endScreen(self):
+    def drawPauseInfo(self, window):
+        tile = self.tile_size
+        if not self.GAME.gameOver and not self.GAME.paused:
+            info = self.font.render('Press SPACE to pause', 1, 'White')
+            window.blit(info, (self.tile_size * 10.6, self.tile_size * 6))
+
+    def pop_up(self):
         tile = self.tile_size
         if self.GAME.gameOver:
-            endScreenImg = pygame.Surface((tile * 4, tile * 4))
+            panel = pygame.Surface((tile * 4, tile * 5))
             message = "Black Won!!" if self.player1Score > self.player2Score \
                 else "White Won!!" if self.player1Score < self.player2Score \
                 else "Tie!!"
-            endText = self.font.render(message, 1, 'White')
-            endScreenImg.blit(endText, (tile / 2, tile / 2))
+            end_text = self.font.render(message, 1, 'White')
+            panel.blit(end_text, (tile / 2, tile / 2))
+
             if (self.GAME.is_recording or self.GAME.is_appending) and self.GAME.turn_count > 1:
-                recordText = self.font.render('Game saved to game_records/', 1, 'White')
-                endScreenImg.blit(recordText, (tile / 2, tile))
-            newGame = pygame.draw.rect(endScreenImg, 'White',
-                                       (tile, tile * 2, tile * 2, tile))
-            newGameText = self.font.render('Play Again', 1, 'Black')
-            endScreenImg.blit(newGameText, (tile * 1.5, tile * 2.375))
-        return endScreenImg
+                record_text = self.font.render('Game saved to game_records/', 1, 'White')
+                panel.blit(record_text, (tile / 2, tile))
+
+            game_text = self.font.render('Play Again', 1, 'Black')
+            pygame.draw.rect(panel, 'White', (tile, tile * 2, tile * 2, tile))
+            panel.blit(game_text, (tile * 1.5, tile * 2.375))
+
+            pygame.draw.rect(panel, 'White', (tile, tile * 3.5, tile * 2, tile))
+            settings_text = self.font.render('Settings', 1, 'Black')
+            panel.blit(settings_text, (tile * 1.6, tile * 3.875))
+
+            return panel
+
+        if self.GAME.paused:
+            panel = pygame.Surface((tile * 4, tile * 5))
+            record_text = self.font.render('Game paused...', 1, 'White')
+            panel.blit(record_text, (tile / 2, tile / 2))
+
+            game_text = self.font.render('Continue', 1, 'Black')
+
+            pygame.draw.rect(panel, 'White', (tile, tile * 2, tile * 2, tile))
+            panel.blit(game_text, (tile * 1.5, tile * 2.375))
+
+            pygame.draw.rect(panel, 'White', (tile, tile * 3.5, tile * 2, tile))
+            if self.GAME.mode == 0:
+                settings_text = self.font.render('Quit', 1, 'Black')
+                panel.blit(settings_text, (tile * 1.75, tile * 3.875))
+            else:
+                settings_text = self.font.render('Settings', 1, 'Black')
+                panel.blit(settings_text, (tile * 1.6, tile * 3.875))
+
+            return panel
 
     def drawGrid(self, window):
         tile = self.tile_size
@@ -174,8 +235,8 @@ class Grid:
                                  (tile + (move[1] * tile) + tile * (3 / 8), tile + (move[0] * tile) + tile * (3 / 8),
                                   tile / 4, tile / 4))
 
-        if self.GAME.gameOver:
-            window.blit(self.endScreen(), (tile * 3, tile * 3))
+        if self.GAME.gameOver or self.GAME.paused:
+            window.blit(self.pop_up(), (tile * 3, tile * 2.5))
 
     def markRecentMove(self, window):
         tile = self.tile_size
@@ -191,6 +252,10 @@ class Grid:
             turn = self.GAME.turn_count
             if turn < self.GAME.data['turn_count']:
                 move = self.GAME.data[f'recent_move{turn + 1}']
+                # move_maker = self.GAME.data[f'recent_move{turn}'][2]
+                # token_image = self.blacktoken.convert_alpha() if move[2] == 1 else self.whitetoken.convert_alpha()
+                # token_image.set_alpha(144)
+                # window.blit(token_image, (tile + move[1] * tile, tile + move[0] * tile))
                 pygame.draw.rect(window, 'Green',
                                  (tile + (move[1] * tile) + tile * 0.425, tile + (move[0] * tile) + tile * 0.425,
                                   tile * 0.15, tile * 0.15))

@@ -1,21 +1,28 @@
 import pygame
 from othello import Othello
+from prompt import Prompt
 
 if __name__ == '__main__':
 
-    # MODIFY THESE ONLY #
-    mode = 1
-    is_recording = False
-    game_file = 'game_records/Game_231223_121159.py'  # demo game record with mode = 1
-    # game_file = 'game_records/Game_231223_180856.py'  # demo game record with mode = 2
-    # game_file = 'game_records/Game_231223_181031.py'  # demo game record with mode = 3
-    # MODIFY THESE ONLY #
+    settings = Prompt()
+    options = list(settings.run())
 
     while True:
-        game = Othello(mode=mode, is_recording=is_recording, imported_file_path=game_file)
-        next_mode, game_file = game.run()
+        game = Othello(*options, screen_height=settings.height, random_sprite=settings.random_sprite)
+        reselect, next_mode, game_file = game.run()
+
         if next_mode == 0:
             break
-        mode = next_mode
+        if reselect == 1:
+            settings.reselect()
+            options = list(settings.run())
+            continue
+        elif reselect == 2:
+            settings.restart()
+            options = list(settings.run())
+            continue
+
+        options[0] = next_mode
+        options[-1] = game_file
 
     pygame.quit()
