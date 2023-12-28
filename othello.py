@@ -93,13 +93,14 @@ class Othello:
         #######################
 
         # WINDOW CAPTION #
-        caption = (f'Othello'
-                   f'{f' - Replaying /{self.imported_f_path}' if self.mode == 0 else ''}'
-                   f'{f' - Recording to /{self.exported_f_path}' if self.is_recording else ''}'
-                   f'{f' - Appending to /{self.exported_f_path}' if self.is_appending else ''}'
-                   f'{f' - Human vs. AI' if abs(self.mode) == 1 else ' - AI vs. Human' if abs(self.mode) == 3 else ''}'
-                   f'{' - AI vs. AI' if self.mode == 2 else ''}'
-                   f'{' - I\'m feeling lucky' if self.random_sprite else ''}')
+        # caption = (f'Othello'
+                #    f'{f' - Replaying /{self.imported_f_path}' if self.mode == 0 else ''}'
+                #    f'{f' - Recording to /{self.exported_f_path}' if self.is_recording else ''}'
+                #    f'{f' - Appending to /{self.exported_f_path}' if self.is_appending else ''}'
+                #    f'{f' - Human vs. AI' if abs(self.mode) == 1 else ' - AI vs. Human' if abs(self.mode) == 3 else ''}'
+                #    f'{' - AI vs. AI' if self.mode == 2 else ''}'
+                #    f'{' - I\'m feeling lucky' if self.random_sprite else ''}')
+        caption = 'lmao'
         pygame.display.set_caption(caption)
         ##################
 
@@ -228,11 +229,11 @@ class Othello:
                                                      f'_b{self.turn_count}.py')
                             f = open(self.APPEND_FILE_PATH, 'w')
                             f.write('data = {\n')
-                            f.write(f'\t"game_mode": {self.data['game_mode']},\n')
+                            f.write(f'\t"game_mode": {self.data["game_mode"]},\n')
                             f.write(f'\t"turn_count": {self.turn_count},\n')
                             for turn in range(self.turn_count + 1):
-                                f.write(f'\t"board{turn}": {str(self.data[f'board{turn}'])},\n')
-                                f.write(f'\t"recent_move{turn}": {str(self.data[f'recent_move{turn}'])},\n')
+                                f.write(f'\t"board{turn}": {str(self.data[f"board{turn}"])},\n')
+                                f.write(f'\t"recent_move{turn}": {str(self.data[f"recent_move{turn}"])},\n')
                             f.write('}')
                             f.close()
                             self.RUN = False

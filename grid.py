@@ -115,7 +115,7 @@ class Grid:
 
     def drawTurns(self, window):
         if self.GAME.mode == 0 and not self.GAME.gameOver:
-            turn_text = f'Turn : {self.GAME.turn_count} / {self.GAME.data['turn_count']}'
+            turn_text = f'Turn : {self.GAME.turn_count} / {self.GAME.data["turn_count"]}'
         else:
             turn_text = f'Turn : {self.GAME.turn_count}'
         text_img = self.font.render(turn_text, 1, 'White')
