@@ -4,7 +4,7 @@ import time
 import importlib
 from grid import Grid
 from computer import ComputerPlayer
-from heuristics import *
+from evaluationFunction import *
 
 
 # Othello: main game object, responsible for assigning turns and updating board

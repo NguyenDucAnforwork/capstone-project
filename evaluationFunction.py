@@ -94,6 +94,14 @@ def stability(grid, turn_count):
 
     return len(black_stable) - len(white_stable) - len(black_unstable) + len(white_unstable)
 
+def combination(grid, count):
+    if count < 20:
+        res = 9 * mobility(grid, count)
+    elif count < 61:
+        res = 2 * stability(grid, count) + 4 * mobility(grid, count) 
+    else: 
+        res = 9*coin_parity(grid, count)
+    return res
 
 def _xSquare(grid, turn_count):
     coordinates = (

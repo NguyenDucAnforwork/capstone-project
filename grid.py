@@ -98,6 +98,7 @@ class Grid:
             [[(2, 2), (3, 2), (3, 3), (3, 5), (4, 2), (4, 3), (5, 3), (5, 4), (6, 3)],
              [(2, 3), (3, 4), (4, 4), (4, 5), (5, 2)]]
         ]
+        random_opening = random.choice(range(0, len(opening_library)))
         grid = []
         for y in range(rows):
             line = []
@@ -105,16 +106,16 @@ class Grid:
                 line.append(0)
             grid.append(line)
 
-        for whiteToken in opening_library[5][0]:
-            self.insertToken(grid, 1, whiteToken[0], whiteToken[1])
+        # for whiteToken in opening_library[random_opening][0]:
+        #     self.insertToken(grid, 1, whiteToken[0], whiteToken[1])
 
-        for blackToken in opening_library[5][1]:
-            self.insertToken(grid, -1, blackToken[0], blackToken[1])
+        # for blackToken in opening_library[random_opening][1]:
+        #     self.insertToken(grid, -1, blackToken[0], blackToken[1])
 
-        # self.insertToken(grid, -1, 3, 3)
-        # self.insertToken(grid, 1, 3, 4)
-        # self.insertToken(grid, -1, 4, 4)
-        # self.insertToken(grid, 1, 4, 3)
+        self.insertToken(grid, -1, 3, 3)
+        self.insertToken(grid, 1, 3, 4)
+        self.insertToken(grid, -1, 4, 4)
+        self.insertToken(grid, 1, 4, 3)
 
         return grid
 

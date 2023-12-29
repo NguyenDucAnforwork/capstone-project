@@ -1,7 +1,7 @@
 import pygame
 import pygame_menu as pm
 import os
-import heuristics
+import evaluationFunction
 from inspect import getmembers, isfunction
 
 # Settings Prompts
@@ -14,7 +14,7 @@ class Prompt:
         HEIGHT = base
         WIDTH = base * (4 / 3)
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
-        pygame.display.set_caption('Othello - Settings')
+        pygame.display.set_caption("Othello - Settings")
 
         RED = (255, 0, 0)
         GREEN = (0, 255, 0)
@@ -65,7 +65,7 @@ class Prompt:
         # Function Selection UI
         self.func_settings._theme.widget_alignment = pm.locals.ALIGN_LEFT
         eval_func = [("Random Move", None)]
-        eval_func.extend(getmembers(heuristics, isfunction))
+        eval_func.extend(getmembers(evaluationFunction, isfunction))
         eval_func = list(filter(lambda option: option[0][0] != '_', eval_func))
         depth = [(str(num), num) for num in range(1, 6)]
         self.func_settings.add.dropselect(title="Black AI's Evaluating Function", dropselect_id='AI_black_func',
@@ -138,7 +138,7 @@ class Prompt:
 
     def replay_start(self):
         data = self.replay_settings.get_input_data()
-        game_file = f'game_records/{data['game_file'][0][0]}'
+        game_file = f"game_records/{data['game_file'][0][0]}"
         self.settings_data = (0, False, None, None, game_file)
         self.main_menu.disable()
 
