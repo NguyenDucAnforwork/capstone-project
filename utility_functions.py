@@ -62,7 +62,7 @@ def find_valid_cells_global(grid, current_player):
 
 
 def swappable_tiles_global(x, y, grid, current_player):
-    """Return a list of all opponent's tiles being flipped if currentPlayer moves to (x, y)"""
+    """Return a list of all opponent's tiles being flipped if currentPlayer plays the move (x, y)"""
     surround_cells = directions(x, y)
     if len(surround_cells) == 0:
         return []
