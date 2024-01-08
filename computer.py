@@ -41,7 +41,7 @@ class ComputerPlayer:
                 if beta <= alpha:
                     break
 
-                newGrid = copy.deepcopy(grid)
+                newGrid = copy.deepcopy(grid)    # reset 
             return bestMove, bestScore
 
         if player < 0:
