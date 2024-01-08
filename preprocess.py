@@ -3,7 +3,7 @@ import time
 from copy import deepcopy
 import json
 
-GAMES, COUNT, MOVES, PROBA, FULL_EDGE, EVAL, CONST = [], {}, {}, {}, {}, {}, 100   # proba[edge][move]   # eval[edge_confi]
+GAMES, COUNT, MOVES, PROBA, FULL_EDGE, EVAL, CONST = [], {}, {}, {}, {}, {}, 100   # proba[edge][move]   # eval[edge_confi]   #MOVES[edge][player][move]
 X = [(1,1), (1,6), (6,1), (6,6)]
 
 def swappableTilesInEdge(move, edge, player):
@@ -128,14 +128,14 @@ def processGame(check, game, position, numMove, maxMove,  player):
             if MOVE[1] == 0:
                 MOVE_PLAYED[3] = MOVE[0]
             
-            if MOVE == (1,1):
-                MOVE_PLAYED[0], MOVE_PLAYED[3] = 8,8
-            if MOVE == (1,6):
-                MOVE_PLAYED[0], MOVE_PLAYED[1] = 9,8
-            if MOVE == (6,6):
-                MOVE_PLAYED[1], MOVE_PLAYED[2] = 9,9
-            if MOVE == (6,1):
-                MOVE_PLAYED[2], MOVE_PLAYED[3] = 8,9    
+        if MOVE == (1,1):
+            MOVE_PLAYED[0], MOVE_PLAYED[3] = 8,8
+        if MOVE == (1,6):
+            MOVE_PLAYED[0], MOVE_PLAYED[1] = 9,8
+        if MOVE == (6,6):
+            MOVE_PLAYED[1], MOVE_PLAYED[2] = 9,9
+        if MOVE == (6,1):
+            MOVE_PLAYED[2], MOVE_PLAYED[3] = 8,9    
         # update position
         if len(swappable_tiles_global(MOVE[0], MOVE[1], position, player)) == 0:
             return
@@ -144,16 +144,16 @@ def processGame(check, game, position, numMove, maxMove,  player):
         for tile in swappableTile:
             position[tile[0]][tile[1]] *= -1
         EDGE_AFTER = extractEdge(position)
-        COMBINE = [(edge_before, move, edge_after) for edge_before, move, edge_after in zip(EDGE_BEFORE, MOVE_PLAYED, EDGE_AFTER)]
-        for edge_before, MOVE, edge_after in COMBINE:
-            if edge_before not in MOVES:
-                MOVES[edge_before] = {}
-            if MOVE not in MOVES[edge_before]:
-                MOVES[edge_before][MOVE] = {}
-            if edge_after not in MOVES[edge_before][MOVE]:
-                MOVES[edge_before][MOVE][edge_after] = 1
+        COMBINE = [(edge_before, move) for edge_before, move in zip(EDGE_BEFORE, MOVE_PLAYED)]
+        for edge_before, move in COMBINE:
+            if str(edge_before) not in MOVES:
+                MOVES[str(edge_before)] = {}
+            if str(player) not in MOVES[str(edge_before)]:
+                MOVES[str(edge_before)][str(player)] = {}
+            if str(move) not in MOVES[str(edge_before)][str(player)]:
+                MOVES[str(edge_before)][str(player)][str(move)] = 1
             else:
-                MOVES[edge_before][MOVE][edge_after] += 1
+                MOVES[str(edge_before)][str(player)][str(move)] += 1
 
         processGame(EDGE_AFTER, game, position, numMove+1, maxMove, player*(-1))
 
@@ -179,23 +179,92 @@ gameProgress()
 
 def expectiminimax(edge, player, blackPass, whitePass, alpha, beta):
     if sum([abs(num) for num in edge]) == 10:
-            if tuple(edge) in FULL_EDGE:
-                EVAL[tuple(edge)] = FULL_EDGE[tuple(edge)][0] / FULL_EDGE[tuple(edge)][1]
-                return FULL_EDGE[tuple(edge)][0] / FULL_EDGE[tuple(edge)][1]
-            else:
-               return 100
-    possibleMove = []
+        bMove = None
+        if tuple(edge) in FULL_EDGE:
+            return bMove, FULL_EDGE[tuple(edge)][0] / FULL_EDGE[tuple(edge)][1]
+        else:
+            return bMove, 100
+    newEdge = deepcopy(edge)
     # find legal + possible move
+    possibleMove = ["NO MOVE"]
     legalMove = findLegalMoveInEdge(edge, player)
     for index in range(len(edge)):
         if edge[index] == 0 and index not in legalMove:
             possibleMove.append(index)
-
+    # print(f"edge: {edge}, player: {player}, whitepass: {whitePass}, blackpass: {blackPass}, legal: {legalMove}, possible: {possibleMove}")
 
     # max player
     if player == 1:
-        newEdge = list(deepcopy(edge))
-        bestScore = alpha
+        # if str(tuple(edge)) in EVAL:
+        #     if str(player) in EVAL[str(tuple(edge))]:
+        #         if str(move) in EVAL[str(tuple(edge))][str(player)]:
+        #             return EVAL[str(tuple(edge))][str(player)][str(move)]
+        bestScore = float('-inf')
+        bestMove = None
+        # print(f"legal move: {legalMove} {edge} {player}")
+
+        for move in legalMove:
+            for tile in swappableTilesInEdge(move, newEdge, player):
+                newEdge[tile] *= -1
+            print(f"{move}, {newEdge}")
+            newEdge[move] = player
+            # print(f"after that: {newEdge}")
+            # print(f"ủa là sao: {newEdge}, {move}")
+            bMove, score = expectiminimax(newEdge, player * (-1), False, False, alpha, beta)
+            # print(f"move: {bMove}, score: {score}")
+            EVAL[tuple(edge)] = {}
+            EVAL[tuple(edge)][str(player)] = {}
+            EVAL[tuple(edge)][str(player)][str(move)] = score
+            if score > bestScore:
+                bestScore = score
+                bestMove = move
+            alpha = max(alpha, bestScore)
+            if beta <= alpha:
+                break
+            newEdge = deepcopy(edge)
+        
+        for move in possibleMove:
+            # we need to make sure the position is not repeated. We treat this case as a legal move
+            if move == "NO MOVE":
+                if (player == 1 and blackPass == False):
+                    bMove, score = expectiminimax(newEdge, player * (-1), True, whitePass, alpha, beta)
+                    print(f"player {player}, edge {newEdge}, move: {bMove}, score: {score}")    
+                    EVAL[str(tuple(edge))] = {}
+                    EVAL[str(tuple(edge))][str(player)] = {}
+                    EVAL[str(tuple(edge))][str(player)][str(move)] = score
+                    if score > bestScore:
+                        bestScore = score
+                        bestMove = move
+                    newEdge = deepcopy(edge)
+            # chance node
+            else:
+                print(f"{move}, {newEdge}")
+                newEdge[move] = player
+                # print(f"after that: {newEdge}")
+                bMove, score = expectiminimax(newEdge, player * (-1), False, False, alpha, beta)
+                # print(f"move: {bMove}, score: {score}")
+                EVAL[str(tuple(edge))] = {}
+                EVAL[str(tuple(edge))][str(player)] = {}
+                EVAL[str(tuple(edge))][str(player)][str(move)] = score
+                if score > bestScore:
+                    bestScore = score
+                    bestMove = move
+            
+            alpha = max(alpha, bestScore)
+            if beta <= alpha:
+                break
+            newEdge = deepcopy(edge)
+        
+        return bestMove, bestScore
+    
+        # max player
+    if player == -1:
+        # if str(tuple(edge)) in EVAL:
+        #     if str(player) in EVAL[str(tuple(edge))]:
+        #         if str(move) in EVAL[str(tuple(edge))][str(player)]:
+        #             return EVAL[str(tuple(edge))][str(player)][str(move)]
+        bestScore = float('inf')
+        bestMove = None
         # print(f"legal move: {legalMove} {edge} {player}")
 
         for move in legalMove:
@@ -203,118 +272,56 @@ def expectiminimax(edge, player, blackPass, whitePass, alpha, beta):
                 newEdge[tile] *= -1
             newEdge[move] = player
             # print(f"ủa là sao: {newEdge}, {move}")
-            score = expectiminimax(newEdge, player * (-1), False, False, alpha, beta)
-            if score > bestScore:
+            bMove, score = expectiminimax(newEdge, player * (-1), False, False, alpha, beta)
+            EVAL[str(tuple(edge))] = {}
+            EVAL[str(tuple(edge))][str(player)] = {}
+            EVAL[str(tuple(edge))][str(player)][str(move)] = score
+            if score < bestScore:
                 bestScore = score
-            alpha = max(alpha, bestScore)
+                bestMove = move
+            beta = min(beta, bestScore)
             if beta <= alpha:
                 break
             newEdge = deepcopy(edge)
         
         for move in possibleMove:
-            res = 0
             # we need to make sure the position is not repeated. We treat this case as a legal move
             if move == "NO MOVE":
-                if (player == 1 and blackPass == False):
-                    score = expectiminimax(newEdge, player * (-1), True, whitePass, alpha, beta)
-                    res += score
-                    
+                if (player == -1 and whitePass == False):
+                    bMove, score = expectiminimax(newEdge, player * (-1), blackPass, True, alpha, beta)
+                    print(f"player {player}, edge {newEdge}, move: {bMove}, score: {score}")                        
+                    EVAL[str(tuple(edge))] = {}
+                    EVAL[str(tuple(edge))][str(player)] = {}
+                    EVAL[str(tuple(edge))][str(player)][str(move)] = score
+                    if score < bestScore:
+                        bestScore = score
+                        bestMove = move
+                    newEdge = deepcopy(edge)
             # chance node
             else:
-                if tuple(newEdge) in MOVES:
-                    if move in MOVES[tuple(newEdge)]:
-                        totalScore = sum([MOVES[tuple(newEdge)][move][tuple(edge_after)] for edge_after in MOVES[tuple(newEdge)][move]])
-                        # for edge_after in MOVES[tuple(newEdge)][move]:
-                        edge_after = deepcopy(newEdge)
-                        edge_after[move] = player
-                        proba = MOVES[tuple(newEdge)][move][tuple(edge_after)] / totalScore if tuple(edge_after) in MOVES[tuple(newEdge)][move] else 1
-                        # print(f"new edge: {newEdge} edge_after: {edge_after}   {player}")                            
-                        score = expectiminimax(list(edge_after), player * -1, False, False, alpha, beta)
-                        res += score * proba
-                        # print(f"res: {res}")
-                else:
-                    # print(f"Nếu edge kh trong MOVES")
-                    newEdge[move] = player
-                    res = expectiminimax(list(newEdge), player * -1, False, False, alpha, beta)
-                if res > bestScore:
-                    bestScore = res
-                    alpha = max(alpha, bestScore)
-                    if beta <= alpha:
-                        break
-                newEdge = deepcopy(edge)
-
-        EVAL[tuple(edge)] = bestScore    
-        return bestScore
-    
-
-    if player == -1:
-        newEdge = list(deepcopy(edge))
-        bestScore = beta
-        # print(f"legal move: {legalMove} {edge} {player}")
-
-        for move in legalMove:
-            for tile in swappableTilesInEdge(move, newEdge, player):   # pasing newEdge, not edge
-                newEdge[tile] *= (-1)
-            newEdge[move] = player
-
-            score = expectiminimax(newEdge, player * (-1), False, False, alpha, beta)
-            if score < bestScore:
-                bestScore = score
+                newEdge[move] = player
+                bMove, score = expectiminimax(newEdge, player * (-1), False, False, alpha, beta)
+                EVAL[str(tuple(edge))] = {}
+                EVAL[str(tuple(edge))][str(player)] = {}
+                EVAL[str(tuple(edge))][str(player)][str(move)] = score
+                if score < bestScore:
+                    bestScore = score
+                    bestMove = move
             beta = min(beta, bestScore)
             if beta <= alpha:
                 break
             newEdge = deepcopy(edge)
-
-        for move in possibleMove:
-            # we need to make sure the position is not repeated
-            if move == "NO MOVE":
-                if player == -1 and whitePass == False:
-                    expectiminimax(edge, player * -1, blackPass, True, alpha, beta)
-                    
-            # chance node
-            else:
-                res = 0            
-                if tuple(newEdge) in MOVES:
-                    if move in MOVES[tuple(newEdge)]:
-                        totalScore = sum([MOVES[tuple(newEdge)][move][tuple(edge_after)] for edge_after in MOVES[tuple(newEdge)][move]])
-                        # for edge_after in MOVES[tuple(newEdge)][move]:
-                        edge_after = deepcopy(newEdge)
-                        edge_after[move] = player
-                        proba = MOVES[tuple(newEdge)][move][tuple(edge_after)] / totalScore if tuple(edge_after) in MOVES[tuple(newEdge)][move] else 1
-                        # print(f"new edge: {newEdge} edge_after: {edge_after}   {player}")
-                        score = expectiminimax(list(edge_after), player * -1, False, False, alpha, beta)
-                        res += score * proba
-                        # print(f"res: {res}")
-
-                else:
-                    # print(f"Nếu edge kh trong MOVES")
-                    newEdge[move] = player
-                    res = expectiminimax(list(newEdge), player * -1, False, False, alpha, beta)
-                if res < bestScore:
-                    bestScore = res
-                    beta = min(beta, bestScore)
-                    if beta <= alpha:
-                        break
-                newEdge = deepcopy(edge)
-        EVAL[tuple(edge)] = bestScore
-        return bestScore
+           
+        return bestMove, bestScore
 
 expectiminimax([0,0,0,0,0,0,0,0,0,0], 1, False, False, -100000,100000)
 
 def saveResult():
-    # for edge_before, moves1 in MOVES.items():
-    #     for move, moves2 in moves1.items():
-    #         for edge_after, count in moves2.items():
-    #             print(f"Edge: {edge_before}, Move: {move}, Edge After: {edge_after}, Count: {count}")
-    # for edge, value in FULL_EDGE.items():
-    #     print(f"edge: {edge}, value: {value}")
-    file_path = "full_edge_data.json"
-    FULL_EDGE_str_keys = {str(key): value for key, value in FULL_EDGE.items()}
-
+    file_path = "backup.json"
+    EVAL_str_keys = {str(key): value for key, value in EVAL.items()}
     # Ghi từ điển vào tập tin JSON
-    # with open(file_path, 'w') as json_file:
-    #     json.dump(FULL_EDGE_str_keys, json_file, indent=4)
-
+    with open(file_path, 'w') as json_file:
+        json.dump(EVAL_str_keys, json_file, indent=4)
 saveResult()
 
 
