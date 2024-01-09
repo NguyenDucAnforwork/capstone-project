@@ -1,10 +1,13 @@
-import utility_functions as util
-
+from utility_functions import *
+import json
 
 # Heuristics
 # Functions must have 2 parameters: grid_object and turn_count
 # if you want to protect a function from being selectable, add '_' before the name
 # for example: _corner, _xSquare won't be selectable
+
+with open("table.json", "r") as file:
+    TABLE = json.load(file)
 
 def coin_parity(grid, turn_count):
     # Direction 1: maximizing B/W disks ratio
@@ -27,12 +30,12 @@ def coin_parity(grid, turn_count):
 def mobility(grid, turn_count):
     # actual/potential mobility: For simplicity I would use the most simple form
     moves = {1: [], -1: []}
-    moves[1], swappable_white = util.find_avail_moves_global(grid, 1)
-    moves[-1], swappable_black = util.find_avail_moves_global(grid, -1)
+    moves[1], swappable_white = find_avail_moves_global(grid, 1)
+    moves[-1], swappable_black = find_avail_moves_global(grid, -1)
 
     # coefficients:
     corner = 10
-    X = -7
+    X = -5
     C = -3
     edge = 0.5
 
@@ -88,14 +91,18 @@ def mobility(grid, turn_count):
     config3 = (1 - grid[1][1] ** 2) * (1 - grid[6][6] ** 2) * grid[2][2] * grid[5][5] * grid[2][2]
     config4 = (1 - grid[6][1] ** 2) * (1 - grid[1][6] ** 2) * grid[2][5] * grid[5][2] * grid[2][5]
 
-
-    return black_mobility - white_mobility + 4 * (config1 + config2) + 3 * (config3 + config4) 
+    res = black_mobility - white_mobility 
+    if moves[1] == 0 or moves[1] == 1:
+        res -= 1000000
+    if moves[-1] == 0 or moves[-1] == 1:
+        res += 1000000
+    return res
 
 
 def stability1(grid, turn_count):
     # unstable: each disc = -1
-    black_move, white_unstable = util.find_avail_moves_global(grid, 1)
-    white_move, black_unstable = util.find_avail_moves_global(grid, -1)
+    black_move, white_unstable = find_avail_moves_global(grid, 1)
+    white_move, black_unstable = find_avail_moves_global(grid, -1)
 
     # semi-stable: each disc = 0
     weight1 = (1-grid[0][1] ** 2)*(1- grid[0][6] ** 2)*grid[0][2]*grid[0][5] * grid[0][2] * grid[0][1] * grid[0][7]
@@ -104,13 +111,22 @@ def stability1(grid, turn_count):
     weight4 = (1 - grid[1][7] ** 2) * (1 - grid[6][7] ** 2) * grid[2][7] * grid[5][7] * grid[2][7] * grid[1][7] * grid[6][7]
     # stable: each disc = 1
     
-    black_stable = util.stable_disc(grid, 1)
-    white_stable = util.stable_disc(grid, -1)
+    black_stable = stable_disc(grid, 1)
+    white_stable = stable_disc(grid, -1)
     return 100*(weight1+weight2+weight3+weight4) + len(black_move) - len(white_move) - len(white_unstable) + len(black_unstable)
 
-def combination(grid, count):    
-    
-    return 4*stability1(grid, count) + 4*mobility(grid,count)
+def combination(grid, count):
+    edges = extractEdge(grid)
+    res = 0
+    for edge in edges:
+        if str(edge) in TABLE:
+            res += 100*TABLE[str(edge)]
+    if count < 20:
+        result = mobility(grid, count)
+        
+    else:
+        result = res
+    return result 
 
 def _xSquare(grid, turn_count):
     coordinates = (
@@ -188,11 +204,11 @@ def _static_weight_ending(grid, turn_count):
 
 
 def iago(grid, turn_count):
-    white_stable = util.stable_disc(grid, -1)
+    white_stable = stable_disc(grid, -1)
     edge_stability = 0
     internal_stability = 0
 
-    for disks in util.stable_disc(grid, 1):
+    for disks in stable_disc(grid, 1):
         y, x = disks[0], disks[1]
         if y in (0, 7) and x in (0, 7):
             edge_stability += 70
@@ -200,6 +216,30 @@ def iago(grid, turn_count):
             edge_stability += 100
         else:
             internal_stability += 1
+
+def stability3(grid, count):
+    # unstable
+    blackMoves, unstableWhiteTiles = find_avail_moves_global(grid, 1)
+    whiteMoves, unstableBlackTiles = find_avail_moves_global(grid, -1)
+
+    # stable
+    whiteStable = stable_disc(grid, -1)
+    blackStable = stable_disc(grid, 1)
+
+    res = 0.4*(len(blackMoves) - len(whiteMoves)) + 0.6 * (len(unstableWhiteTiles) - len(unstableBlackTiles)) 
+
+    # eval edge pos
+
+    return res
+
+def stability2(grid, count):
+    edges = extractEdge(grid)
+    res = 0
+    for edge in edges:
+        if str(edge) in TABLE:
+            res += 100*TABLE[str(edge)]
+
+    return res
 
 def stability(grid, count):
     numW = 0
@@ -210,8 +250,8 @@ def stability(grid, count):
     X_square = [[1,1],[1,6],[6,1],[6,6]]
     corrner = [[0,0],[0,7],[7,0],[7,7]]
     # unstable
-    whiteMoves, unstableBlackTiles = util.find_avail_moves_global(grid, -1)
-    blackMoves, unstableWhiteTiles = util.find_avail_moves_global(grid, 1)
+    whiteMoves, unstableBlackTiles = find_avail_moves_global(grid, -1)
+    blackMoves, unstableWhiteTiles = find_avail_moves_global(grid, 1)
     if len(unstableWhiteTiles) !=0:
         for i in range(len(unstableWhiteTiles[0])):
             if list(unstableWhiteTiles[0][i]) in A_square:
@@ -235,8 +275,8 @@ def stability(grid, count):
     
     
     # stable
-    whiteStable = util.stable_disc(grid, -1)
-    blackStable = util.stable_disc(grid, 1)
+    whiteStable = stable_disc(grid, -1)
+    blackStable = stable_disc(grid, 1)
     
     if len(whiteStable) !=0:
         for i in range(len(whiteStable)):
@@ -268,7 +308,7 @@ def stability(grid, count):
                 numB +=10
     
 
-    # #semi-stable
+    # semi-stable
     semistablewhite=[]
     if len(unstableWhiteTiles)!=0:
         for i in range(len(unstableWhiteTiles[0])):
@@ -304,4 +344,4 @@ def stability(grid, count):
             else:
                 numB +=5
     #return len(whiteStable) - len(blackStable)
-    return (numW - numB)//100
+    return (numB - numW)//100

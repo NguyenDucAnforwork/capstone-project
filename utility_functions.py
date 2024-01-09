@@ -3,7 +3,7 @@ import pygame
 
 # utility functions, needed for grid.py and heuristics.py
 # important file, modifying this could break some (many) other functionalities
-
+CONST = 100
 def directions(x, y, minX=0, minY=0, maxX=7, maxY=7):
     """Check to determine which directions are valid from current cell"""
     valid_directions = []
@@ -158,3 +158,17 @@ def stable_disc(grid, player):
             result.append(coor)
 
     return result
+
+def extractEdge(position):
+    edge1 = position[0].copy()
+    edge1.extend([position[1][1], position[1][6], (0, -CONST)])
+    
+    edge2 = [position[i][7] for i in range(8)]
+    edge2.extend([position[1][6], position[6][6], (-CONST, 7)])
+
+    edge3 = position[7].copy()
+    edge3.extend([position[6][1], position[6][6], (7, -CONST)])
+
+    edge4 = [position[i][0] for i in range(8)]
+    edge4.extend([position[1][1], position[1][6], (-CONST, 0)])
+    return [tuple(edge1[:-1]), tuple(edge2[:-1]), tuple(edge3[:-1]), tuple(edge4[:-1])]

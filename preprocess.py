@@ -38,20 +38,6 @@ def library(datapath):
             game = convertTextToMove(textGame.strip())
             GAMES.append(game)
 
-def extractEdge(position):
-    edge1 = position[0].copy()
-    edge1.extend([position[1][1], position[1][6], (0, -CONST)])
-    
-    edge2 = [position[i][7] for i in range(8)]
-    edge2.extend([position[1][6], position[6][6], (-CONST, 7)])
-
-    edge3 = position[7].copy()
-    edge3.extend([position[6][1], position[6][6], (7, -CONST)])
-
-    edge4 = [position[i][0] for i in range(8)]
-    edge4.extend([position[1][1], position[1][6], (-CONST, 0)])
-    return [tuple(edge1[:-1]), tuple(edge2[:-1]), tuple(edge3[:-1]), tuple(edge4[:-1])]
-
 def findLegalMoveInEdge(edge, player):
     res = []
     for index in range(len(edge)):
@@ -81,13 +67,13 @@ def findLegalMoveInBoard(position, player):
     return res
 
 # keep track of: edge pos + avail move:
-def processGame(check, game, position, numMove, maxMove,  player):
+def processGame(EDGE, game, position, numMove, maxMove,  player):
     MOVE_PLAYED, EDGE_BEFORE, EDGE_AFTER = ["No move" for _ in range(4)], [], []
     # stop condition:
     if numMove == maxMove:
         coin_parity = sum([num for row in position for num in row])
-        for full_edge in check:
-            if sum([abs(num) for num in full_edge]) == 10:
+        for full_edge in EDGE:
+            # if sum([abs(num) for num in full_edge]) == 10:
                 if full_edge not in FULL_EDGE:
                     FULL_EDGE[full_edge] = [0,0]
                 FULL_EDGE[full_edge][0] += coin_parity
@@ -96,46 +82,37 @@ def processGame(check, game, position, numMove, maxMove,  player):
     move = game[numMove]
     # print(f"pos: {position}, Move: {numMove}, MaxMove: {maxMove}, player: {player}")
     if len(swappable_tiles_global(move[0], move[1], position, player)) == 0:
-        processGame(check, game, position, numMove, maxMove,  player*(-1))
+        processGame(EDGE, game, position, numMove, maxMove,  player*(-1))
     
     else:
         legalMove = findLegalMoveInBoard(position, player)
         MOVE = game[numMove]    # dont know why this bug occurs
-        edge1 = position[0].copy()
-        edge1.extend([position[1][1], position[1][6], (0, -CONST)])
-        
-        edge2 = [position[i][7] for i in range(8)]
-        edge2.extend([position[1][6], position[6][6], (-CONST, 7)])
-
-        edge3 = position[7].copy()
-        edge3.extend([position[6][1], position[6][6], (7, -CONST)])
-
-        edge4 = [position[i][0] for i in range(8)]
-        edge4.extend([position[1][1], position[1][6], (-CONST, 0)])
 
         # update edges + possible move of this current pos
         EDGE_BEFORE = extractEdge(position)
         tuple_pos = tuple(map(tuple, position))  # Convert position to tuple of tuples    for edge in edges:
-        
+        for edge in EDGE_BEFORE:
+            if edge not in EDGE:
+                EDGE.append(edge)
         # convert move to its normalized position
-        if MOVE not in legalMove:
-            if MOVE[0] == 0:
-                MOVE_PLAYED[0] = MOVE[1]
-            if MOVE[0] == 7:
-                MOVE_PLAYED[2] = MOVE[1]
-            if MOVE[1] == 7:
-                MOVE_PLAYED[1] = MOVE[0]
-            if MOVE[1] == 0:
-                MOVE_PLAYED[3] = MOVE[0]
+        # if MOVE not in legalMove:
+        #     if MOVE[0] == 0:
+        #         MOVE_PLAYED[0] = MOVE[1]
+        #     if MOVE[0] == 7:
+        #         MOVE_PLAYED[2] = MOVE[1]
+        #     if MOVE[1] == 7:
+        #         MOVE_PLAYED[1] = MOVE[0]
+        #     if MOVE[1] == 0:
+        #         MOVE_PLAYED[3] = MOVE[0]
             
-        if MOVE == (1,1):
-            MOVE_PLAYED[0], MOVE_PLAYED[3] = 8,8
-        if MOVE == (1,6):
-            MOVE_PLAYED[0], MOVE_PLAYED[1] = 9,8
-        if MOVE == (6,6):
-            MOVE_PLAYED[1], MOVE_PLAYED[2] = 9,9
-        if MOVE == (6,1):
-            MOVE_PLAYED[2], MOVE_PLAYED[3] = 8,9    
+        # if MOVE == (1,1):
+        #     MOVE_PLAYED[0], MOVE_PLAYED[3] = 8,8
+        # if MOVE == (1,6):
+        #     MOVE_PLAYED[0], MOVE_PLAYED[1] = 9,8
+        # if MOVE == (6,6):
+        #     MOVE_PLAYED[1], MOVE_PLAYED[2] = 9,9
+        # if MOVE == (6,1):
+        #     MOVE_PLAYED[2], MOVE_PLAYED[3] = 8,9    
         # update position
         if len(swappable_tiles_global(MOVE[0], MOVE[1], position, player)) == 0:
             return
@@ -143,19 +120,19 @@ def processGame(check, game, position, numMove, maxMove,  player):
         swappableTile = swappable_tiles_global(MOVE[0], MOVE[1], position, player)
         for tile in swappableTile:
             position[tile[0]][tile[1]] *= -1
-        EDGE_AFTER = extractEdge(position)
-        COMBINE = [(edge_before, move) for edge_before, move in zip(EDGE_BEFORE, MOVE_PLAYED)]
-        for edge_before, move in COMBINE:
-            if str(edge_before) not in MOVES:
-                MOVES[str(edge_before)] = {}
-            if str(player) not in MOVES[str(edge_before)]:
-                MOVES[str(edge_before)][str(player)] = {}
-            if str(move) not in MOVES[str(edge_before)][str(player)]:
-                MOVES[str(edge_before)][str(player)][str(move)] = 1
-            else:
-                MOVES[str(edge_before)][str(player)][str(move)] += 1
+        # EDGE_AFTER = extractEdge(position)
+        # COMBINE = [(edge_before, move) for edge_before, move in zip(EDGE_BEFORE, MOVE_PLAYED)]
+        # for edge_before, move in COMBINE:
+        #     if str(edge_before) not in MOVES:
+        #         MOVES[str(edge_before)] = {}
+        #     if str(player) not in MOVES[str(edge_before)]:
+        #         MOVES[str(edge_before)][str(player)] = {}
+        #     if str(move) not in MOVES[str(edge_before)][str(player)]:
+        #         MOVES[str(edge_before)][str(player)][str(move)] = 1
+        #     else:
+        #         MOVES[str(edge_before)][str(player)][str(move)] += 1
 
-        processGame(EDGE_AFTER, game, position, numMove+1, maxMove, player*(-1))
+        processGame(EDGE, game, position, numMove+1, maxMove, player*(-1))
 
 def gameProgress():
     initialPosition = (
@@ -314,11 +291,11 @@ def expectiminimax(edge, player, blackPass, whitePass, alpha, beta):
            
         return bestMove, bestScore
 
-expectiminimax([0,0,0,0,0,0,0,0,0,0], 1, False, False, -100000,100000)
+# expectiminimax([0,0,0,0,0,0,0,0,0,0], 1, False, False, -100000,100000)
 
 def saveResult():
     file_path = "backup.json"
-    EVAL_str_keys = {str(key): value for key, value in EVAL.items()}
+    EVAL_str_keys = {str(key): value for key, value in FULL_EDGE.items()}
     # Ghi từ điển vào tập tin JSON
     with open(file_path, 'w') as json_file:
         json.dump(EVAL_str_keys, json_file, indent=4)
